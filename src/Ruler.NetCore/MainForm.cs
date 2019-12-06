@@ -44,7 +44,7 @@ namespace Ruler.NetCore
 
             Text = "Ruler";
             BackColor = Color.White;
-            ClientSize = new Size(400, 75);
+            ClientSize = new Size(512, 128);
             FormBorderStyle = FormBorderStyle.None;
             Opacity = 0.65;
             ContextMenuStrip = _menu;
@@ -78,16 +78,16 @@ namespace Ruler.NetCore
             _verticalMenuItem = AddMenuItem("Vertical");
             _toolTipMenuItem = AddMenuItem("Tool Tip");
             ToolStripMenuItem opacityMenuItem = AddMenuItem("Opacity");
-            AddMenuItem("-");
+            _menu.Items.Add(new ToolStripSeparator());
             AddMenuItem("About");
-            AddMenuItem("-");
+            _menu.Items.Add(new ToolStripSeparator());
             AddMenuItem("Exit");
 
             for (int i = 10; i <= 100; i += 10)
             {
                 ToolStripMenuItem subMenu = new ToolStripMenuItem(i + "%");
                 subMenu.Click += OpacityMenuHandler;
-                // opacityMenuItem.ToolStripMenuItem.Add(subMenu);
+                opacityMenuItem.DropDownItems.Add(subMenu);
             }
         }
 
@@ -96,8 +96,7 @@ namespace Ruler.NetCore
             ToolStripMenuItem mi = new ToolStripMenuItem(text);
             mi.Click += MenuHandler;
             mi.ShortcutKeys = shortcut;
-            // _menu.ToolStripMenuItem.Add(mi);
-
+            _menu.Items.Add(mi);
             return mi;
         }
 
@@ -442,7 +441,7 @@ namespace Ruler.NetCore
                     break;
 
                 default:
-                    MessageBox.Show("Unknown menu item.");
+                    // MessageBox.Show("Unknown menu item.");
                     break;
             }
         }
