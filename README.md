@@ -8,5 +8,5 @@ Origin repo: https://archive.codeplex.com/?p=ruler, Author: Jeff Key
 
 ## Updates
 
-- Port to .NET Core 3.0
+- Port to .NET Core 3.1
 - Publish as single exe (huge size but works)
