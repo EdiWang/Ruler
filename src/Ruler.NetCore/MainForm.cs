@@ -28,9 +28,9 @@ namespace Ruler.NetCore
         private int _resizeBorderWidth = 5;
         private Point _mouseDownPoint;
         private ResizeRegion _resizeRegion = ResizeRegion.None;
-        private readonly ContextMenu _menu = new ContextMenu();
-        private MenuItem _verticalMenuItem;
-        private MenuItem _toolTipMenuItem;
+        private readonly ContextMenuStrip _menu = new ContextMenuStrip();
+        private ToolStripMenuItem _verticalMenuItem;
+        private ToolStripMenuItem _toolTipMenuItem;
 
         public MainForm()
         {
@@ -44,10 +44,10 @@ namespace Ruler.NetCore
 
             Text = "Ruler";
             BackColor = Color.White;
-            ClientSize = new Size(400, 75);
+            ClientSize = new Size(512, 128);
             FormBorderStyle = FormBorderStyle.None;
             Opacity = 0.65;
-            ContextMenu = _menu;
+            ContextMenuStrip = _menu;
             Font = new Font("Segoe UI", 10);
 
             SetStyle(ControlStyles.DoubleBuffer | ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
@@ -77,27 +77,26 @@ namespace Ruler.NetCore
             AddMenuItem("Stay On Top");
             _verticalMenuItem = AddMenuItem("Vertical");
             _toolTipMenuItem = AddMenuItem("Tool Tip");
-            MenuItem opacityMenuItem = AddMenuItem("Opacity");
-            AddMenuItem("-");
+            ToolStripMenuItem opacityMenuItem = AddMenuItem("Opacity");
+            _menu.Items.Add(new ToolStripSeparator());
             AddMenuItem("About");
-            AddMenuItem("-");
+            _menu.Items.Add(new ToolStripSeparator());
             AddMenuItem("Exit");
 
             for (int i = 10; i <= 100; i += 10)
             {
-                MenuItem subMenu = new MenuItem(i + "%");
+                ToolStripMenuItem subMenu = new ToolStripMenuItem(i + "%");
                 subMenu.Click += OpacityMenuHandler;
-                opacityMenuItem.MenuItems.Add(subMenu);
+                opacityMenuItem.DropDownItems.Add(subMenu);
             }
         }
 
-        private MenuItem AddMenuItem(string text, Shortcut shortcut = Shortcut.None)
+        private ToolStripMenuItem AddMenuItem(string text, Keys shortcut = Keys.None)
         {
-            MenuItem mi = new MenuItem(text);
+            ToolStripMenuItem mi = new ToolStripMenuItem(text);
             mi.Click += MenuHandler;
-            mi.Shortcut = shortcut;
-            _menu.MenuItems.Add(mi);
-
+            mi.ShortcutKeys = shortcut;
+            _menu.Items.Add(mi);
             return mi;
         }
 
@@ -408,13 +407,13 @@ namespace Ruler.NetCore
 
         private void OpacityMenuHandler(object sender, EventArgs e)
         {
-            MenuItem mi = (MenuItem)sender;
+            ToolStripMenuItem mi = (ToolStripMenuItem)sender;
             Opacity = double.Parse(mi.Text.Replace("%", "")) / 100;
         }
 
         private void MenuHandler(object sender, EventArgs e)
         {
-            MenuItem mi = (MenuItem)sender;
+            ToolStripMenuItem mi = (ToolStripMenuItem)sender;
 
             switch (mi.Text)
             {
@@ -442,7 +441,7 @@ namespace Ruler.NetCore
                     break;
 
                 default:
-                    MessageBox.Show("Unknown menu item.");
+                    // MessageBox.Show("Unknown menu item.");
                     break;
             }
         }
