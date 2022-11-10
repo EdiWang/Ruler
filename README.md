@@ -8,7 +8,7 @@ Origin repo: https://archive.codeplex.com/?p=ruler, Author: Jeff Key
 
 ## Updates to the original project
 
-- Port to .NET 5.0
+- Port to .NET 7.0
 - Updated context menu style
 - Support HDPI screens
 - Publish as single exe (huge size but works)
