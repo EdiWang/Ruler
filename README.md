@@ -8,7 +8,7 @@ Origin author: Jeff Key
 
 ## Updates to the original project
 
-- Port to .NET 6.0
+- Port to .NET 8.0
 - Updated context menu style
 - Support HDPI screens
 - Publish as single exe
