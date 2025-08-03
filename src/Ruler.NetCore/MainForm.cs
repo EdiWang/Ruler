@@ -431,7 +431,7 @@ public sealed class MainForm : Form
         }
     }
 
-    private void MenuHandler(object? sender, EventArgs e)
+    private void MenuHandler(object sender, EventArgs e)
     {
         if (sender is not ToolStripMenuItem menuItem) return;
 
@@ -458,8 +458,8 @@ public sealed class MainForm : Form
 
     private static void ShowAboutDialog()
     {
-        var message = $"Ruler v{Application.ProductVersion} by Jeff Key\n" +
-                     "www.sliver.com\n" +
+        var message = $"Ruler v{Application.ProductVersion} by Jeff Key, Edi Wang\n" +
+                     "www.sliver.com, edi.wang\n" +
                      "Icon by Kristen Magee @ www.kbecca.com";
         MessageBox.Show(message, "About Ruler", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
