@@ -4,7 +4,7 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <Authors>Jeff Key, Edi Wang</Authors>
-    <Version>2.1.0</Version>
+    <Version>2.2.0</Version>
     <Company>Ruler.NetCore</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/EdiWang/Ruler</RepositoryUrl>
