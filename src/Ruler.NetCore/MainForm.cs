@@ -13,54 +13,111 @@ public sealed class MainForm : Form
 
     #endregion
 
-    private readonly ToolTip _toolTip = new ToolTip();
+    #region Constants
+
+    private const int DefaultResizeBorderWidth = 5;
+    private const int SmallMovement = 1;
+    private const int LargeMovement = 5;
+    private const double DefaultOpacity = 0.65;
+    private const int DefaultWidth = 512;
+    private const int DefaultHeight = 128;
+
+    #endregion
+
+    #region Fields
+
+    private readonly ToolTip _toolTip = new();
+    private readonly ContextMenuStrip _menu = new();
+    private readonly Font _rulerFont = new("Segoe UI", 10);
+
     private Point _offset;
     private Rectangle _mouseDownRect;
-    private int _resizeBorderWidth = 5;
+    private readonly int _resizeBorderWidth = DefaultResizeBorderWidth;
     private Point _mouseDownPoint;
     private ResizeRegion _resizeRegion = ResizeRegion.None;
-    private readonly ContextMenuStrip _menu = new ContextMenuStrip();
+
     private ToolStripMenuItem _verticalMenuItem;
     private ToolStripMenuItem _toolTipMenuItem;
 
+    #endregion
+
+    #region Constructor
+
     public MainForm()
     {
-        SetStyle(ControlStyles.ResizeRedraw, true);
-        UpdateStyles();
-
-        ResourceManager resources = new ResourceManager(typeof(MainForm));
-        Icon = (Icon)resources.GetObject("$this.Icon");
-
+        InitializeComponent();
         SetUpMenu();
-
-        Text = "Ruler";
-        BackColor = Color.White;
-        ClientSize = new Size(512, 128);
-        FormBorderStyle = FormBorderStyle.None;
-        Opacity = 0.65;
-        ContextMenuStrip = _menu;
-        Font = new Font("Segoe UI", 10);
-
-        SetStyle(ControlStyles.DoubleBuffer | ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
     }
+
+    #endregion
+
+    #region Properties
 
     private bool IsVertical
     {
-        get => _verticalMenuItem.Checked;
-        set => _verticalMenuItem.Checked = value;
+        get => _verticalMenuItem?.Checked ?? false;
+        set
+        {
+            if (_verticalMenuItem != null)
+                _verticalMenuItem.Checked = value;
+        }
     }
 
     private bool ShowToolTip
     {
-        get => _toolTipMenuItem.Checked;
+        get => _toolTipMenuItem?.Checked ?? false;
         set
         {
-            _toolTipMenuItem.Checked = value;
-            if (value)
+            if (_toolTipMenuItem != null)
             {
-                SetToolTip();
+                _toolTipMenuItem.Checked = value;
+                if (value)
+                {
+                    SetToolTip();
+                }
             }
         }
+    }
+
+    #endregion
+
+    #region Initialization
+
+    private void InitializeComponent()
+    {
+        SetStyle(ControlStyles.ResizeRedraw | ControlStyles.DoubleBuffer |
+                 ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
+        UpdateStyles();
+
+        LoadIcon();
+        ConfigureAppearance();
+    }
+
+    private void LoadIcon()
+    {
+        try
+        {
+            var resources = new ResourceManager(typeof(MainForm));
+            if (resources.GetObject("$this.Icon") is Icon icon)
+            {
+                Icon = icon;
+            }
+        }
+        catch
+        {
+            // Fallback to default icon if resource loading fails
+        }
+    }
+
+    private void ConfigureAppearance()
+    {
+        Text = "Ruler";
+        BackColor = Color.White;
+        ClientSize = new Size(DefaultWidth, DefaultHeight);
+        FormBorderStyle = FormBorderStyle.None;
+        Opacity = DefaultOpacity;
+        ContextMenuStrip = _menu;
+        Font = _rulerFont;
     }
 
     private void SetUpMenu()
@@ -68,15 +125,20 @@ public sealed class MainForm : Form
         AddMenuItem("Stay On Top");
         _verticalMenuItem = AddMenuItem("Vertical");
         _toolTipMenuItem = AddMenuItem("Tool Tip");
-        ToolStripMenuItem opacityMenuItem = AddMenuItem("Opacity");
+        var opacityMenuItem = AddMenuItem("Opacity");
         _menu.Items.Add(new ToolStripSeparator());
         AddMenuItem("About");
         _menu.Items.Add(new ToolStripSeparator());
         AddMenuItem("Exit");
 
+        CreateOpacitySubMenu(opacityMenuItem);
+    }
+
+    private void CreateOpacitySubMenu(ToolStripMenuItem opacityMenuItem)
+    {
         for (int i = 10; i <= 100; i += 10)
         {
-            ToolStripMenuItem subMenu = new ToolStripMenuItem(i + "%");
+            var subMenu = new ToolStripMenuItem($"{i}%");
             subMenu.Click += OpacityMenuHandler;
             opacityMenuItem.DropDownItems.Add(subMenu);
         }
@@ -84,17 +146,24 @@ public sealed class MainForm : Form
 
     private ToolStripMenuItem AddMenuItem(string text, Keys shortcut = Keys.None)
     {
-        ToolStripMenuItem mi = new ToolStripMenuItem(text);
-        mi.Click += MenuHandler;
-        mi.ShortcutKeys = shortcut;
-        _menu.Items.Add(mi);
-        return mi;
+        var menuItem = new ToolStripMenuItem(text)
+        {
+            ShortcutKeys = shortcut
+        };
+        menuItem.Click += MenuHandler;
+        _menu.Items.Add(menuItem);
+        return menuItem;
     }
+
+    #endregion
+
+    #region Mouse Handling
 
     protected override void OnMouseDown(MouseEventArgs e)
     {
-        _offset = new Point(MousePosition.X - Location.X, MousePosition.Y - Location.Y);
-        _mouseDownPoint = MousePosition;
+        var mousePos = MousePosition;
+        _offset = new Point(mousePos.X - Location.X, mousePos.Y - Location.Y);
+        _mouseDownPoint = mousePos;
         _mouseDownRect = ClientRectangle;
 
         base.OnMouseDown(e);
@@ -114,15 +183,16 @@ public sealed class MainForm : Form
             return;
         }
 
-        Point clientCursorPos = PointToClient(MousePosition);
-        Rectangle resizeInnerRect = ClientRectangle;
+        var clientCursorPos = PointToClient(MousePosition);
+        var resizeInnerRect = ClientRectangle;
         resizeInnerRect.Inflate(-_resizeBorderWidth, -_resizeBorderWidth);
 
-        bool inResizableArea = ClientRectangle.Contains(clientCursorPos) && !resizeInnerRect.Contains(clientCursorPos);
+        bool inResizableArea = ClientRectangle.Contains(clientCursorPos) &&
+                              !resizeInnerRect.Contains(clientCursorPos);
 
         if (inResizableArea)
         {
-            ResizeRegion resizeRegion = GetResizeRegion(clientCursorPos);
+            var resizeRegion = GetResizeRegion(clientCursorPos);
             SetResizeCursor(resizeRegion);
 
             if (e.Button == MouseButtons.Left)
@@ -137,27 +207,17 @@ public sealed class MainForm : Form
 
             if (e.Button == MouseButtons.Left)
             {
-                Location = new Point(MousePosition.X - _offset.X, MousePosition.Y - _offset.Y);
+                var mousePos = MousePosition;
+                Location = new Point(mousePos.X - _offset.X, mousePos.Y - _offset.Y);
             }
         }
 
         base.OnMouseMove(e);
     }
 
-    protected override void OnResize(EventArgs e)
-    {
-        if (ShowToolTip)
-        {
-            SetToolTip();
-        }
+    #endregion
 
-        base.OnResize(e);
-    }
-
-    private void SetToolTip()
-    {
-        _toolTip.SetToolTip(this, $"Width: {Width} pixels\nHeight: {Height} pixels");
-    }
+    #region Keyboard Handling
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
@@ -169,7 +229,6 @@ public sealed class MainForm : Form
             case Keys.Down:
                 HandleMoveResizeKeystroke(e);
                 break;
-
             case Keys.Space:
                 ChangeOrientation();
                 break;
@@ -180,268 +239,251 @@ public sealed class MainForm : Form
 
     private void HandleMoveResizeKeystroke(KeyEventArgs e)
     {
-        if (e.KeyCode == Keys.Right)
+        var movement = e.Control ? SmallMovement : LargeMovement;
+
+        switch (e.KeyCode)
         {
-            if (e.Control)
-            {
-                if (e.Shift)
-                {
-                    Width += 1;
-                }
+            case Keys.Right:
+                if (e.Control && e.Shift)
+                    Width += SmallMovement;
                 else
-                {
-                    Left += 1;
-                }
-            }
-            else
-            {
-                Left += 5;
-            }
-        }
-        else if (e.KeyCode == Keys.Left)
-        {
-            if (e.Control)
-            {
-                if (e.Shift)
-                {
-                    Width -= 1;
-                }
+                    Left += movement;
+                break;
+
+            case Keys.Left:
+                if (e.Control && e.Shift)
+                    Width -= SmallMovement;
                 else
-                {
-                    Left -= 1;
-                }
-            }
-            else
-            {
-                Left -= 5;
-            }
-        }
-        else if (e.KeyCode == Keys.Up)
-        {
-            if (e.Control)
-            {
-                if (e.Shift)
-                {
-                    Height -= 1;
-                }
+                    Left -= movement;
+                break;
+
+            case Keys.Up:
+                if (e.Control && e.Shift)
+                    Height -= SmallMovement;
                 else
-                {
-                    Top -= 1;
-                }
-            }
-            else
-            {
-                Top -= 5;
-            }
-        }
-        else if (e.KeyCode == Keys.Down)
-        {
-            if (e.Control)
-            {
-                if (e.Shift)
-                {
-                    Height += 1;
-                }
+                    Top -= movement;
+                break;
+
+            case Keys.Down:
+                if (e.Control && e.Shift)
+                    Height += SmallMovement;
                 else
-                {
-                    Top += 1;
-                }
-            }
-            else
-            {
-                Top += 5;
-            }
+                    Top += movement;
+                break;
         }
     }
 
+    #endregion
+
+    #region Resize Handling
+
     private void HandleResize()
     {
+        var mouseDiff = new Point(
+            MousePosition.X - _mouseDownPoint.X,
+            MousePosition.Y - _mouseDownPoint.Y);
+
         switch (_resizeRegion)
         {
             case ResizeRegion.E:
-                {
-                    int diff = MousePosition.X - _mouseDownPoint.X;
-                    Width = _mouseDownRect.Width + diff;
-                    break;
-                }
+                Width = _mouseDownRect.Width + mouseDiff.X;
+                break;
             case ResizeRegion.S:
-                {
-                    int diff = MousePosition.Y - _mouseDownPoint.Y;
-                    Height = _mouseDownRect.Height + diff;
-                    break;
-                }
+                Height = _mouseDownRect.Height + mouseDiff.Y;
+                break;
             case ResizeRegion.SE:
-                {
-                    Width = _mouseDownRect.Width + MousePosition.X - _mouseDownPoint.X;
-                    Height = _mouseDownRect.Height + MousePosition.Y - _mouseDownPoint.Y;
-                    break;
-                }
+                Width = _mouseDownRect.Width + mouseDiff.X;
+                Height = _mouseDownRect.Height + mouseDiff.Y;
+                break;
         }
     }
 
     private void SetResizeCursor(ResizeRegion region)
     {
-        switch (region)
+        Cursor = region switch
         {
-            case ResizeRegion.N:
-            case ResizeRegion.S:
-                Cursor = Cursors.SizeNS;
-                break;
-
-            case ResizeRegion.E:
-            case ResizeRegion.W:
-                Cursor = Cursors.SizeWE;
-                break;
-
-            case ResizeRegion.NW:
-            case ResizeRegion.SE:
-                Cursor = Cursors.SizeNWSE;
-                break;
-
-            default:
-                Cursor = Cursors.SizeNESW;
-                break;
-        }
+            ResizeRegion.N or ResizeRegion.S => Cursors.SizeNS,
+            ResizeRegion.E or ResizeRegion.W => Cursors.SizeWE,
+            ResizeRegion.NW or ResizeRegion.SE => Cursors.SizeNWSE,
+            _ => Cursors.SizeNESW
+        };
     }
 
     private ResizeRegion GetResizeRegion(Point clientCursorPos)
     {
-        if (clientCursorPos.Y <= _resizeBorderWidth)
+        bool isTop = clientCursorPos.Y <= _resizeBorderWidth;
+        bool isBottom = clientCursorPos.Y >= Height - _resizeBorderWidth;
+        bool isLeft = clientCursorPos.X <= _resizeBorderWidth;
+        bool isRight = clientCursorPos.X >= Width - _resizeBorderWidth;
+
+        return (isTop, isBottom, isLeft, isRight) switch
         {
-            if (clientCursorPos.X <= _resizeBorderWidth) return ResizeRegion.NW;
-            else if (clientCursorPos.X >= Width - _resizeBorderWidth) return ResizeRegion.NE;
-            else return ResizeRegion.N;
-        }
-        else if (clientCursorPos.Y >= Height - _resizeBorderWidth)
-        {
-            if (clientCursorPos.X <= _resizeBorderWidth) return ResizeRegion.SW;
-            else if (clientCursorPos.X >= Width - _resizeBorderWidth) return ResizeRegion.SE;
-            else return ResizeRegion.S;
-        }
-        else
-        {
-            if (clientCursorPos.X <= _resizeBorderWidth) return ResizeRegion.W;
-            else return ResizeRegion.E;
-        }
+            (true, false, true, false) => ResizeRegion.NW,
+            (true, false, false, true) => ResizeRegion.NE,
+            (true, false, false, false) => ResizeRegion.N,
+            (false, true, true, false) => ResizeRegion.SW,
+            (false, true, false, true) => ResizeRegion.SE,
+            (false, true, false, false) => ResizeRegion.S,
+            (false, false, true, false) => ResizeRegion.W,
+            _ => ResizeRegion.E
+        };
     }
+
+    #endregion
+
+    #region Drawing
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        Graphics graphics = e.Graphics;
+        var graphics = e.Graphics;
+        var (width, height) = PrepareGraphicsForOrientation(graphics);
+        DrawRuler(graphics, width, height);
+        base.OnPaint(e);
+    }
 
-        int height = Height;
-        int width = Width;
-
+    private (int width, int height) PrepareGraphicsForOrientation(Graphics graphics)
+    {
         if (IsVertical)
         {
             graphics.RotateTransform(90);
             graphics.TranslateTransform(0, -Width + 1);
-            height = Width;
-            width = Height;
+            return (Height, Width);
         }
-
-        DrawRuler(graphics, width, height);
-
-        base.OnPaint(e);
+        return (Width, Height);
     }
 
     private void DrawRuler(Graphics g, int formWidth, int formHeight)
     {
-        // Border
+        DrawBorder(g, formWidth, formHeight);
+        DrawDimensionLabel(g, formWidth, formHeight);
+        DrawTicks(g, formWidth, formHeight);
+    }
+
+    private static void DrawBorder(Graphics g, int formWidth, int formHeight)
+    {
         g.DrawRectangle(Pens.Black, 0, 0, formWidth - 1, formHeight - 1);
+    }
 
-        // Width
-        g.DrawString(formWidth + " pixels", Font, Brushes.Black, 10, formHeight / 2 - Font.Height / 2);
+    private void DrawDimensionLabel(Graphics g, int formWidth, int formHeight)
+    {
+        var text = $"{formWidth} pixels";
+        var y = formHeight / 2 - Font.Height / 2;
+        g.DrawString(text, Font, Brushes.Black, 10, y);
+    }
 
-        // Ticks
-        for (int i = 0; i < formWidth; i++)
+    private void DrawTicks(Graphics g, int formWidth, int formHeight)
+    {
+        for (int i = 0; i < formWidth; i += 2)
         {
-            if (i % 2 == 0)
-            {
-                int tickHeight;
-                if (i % 100 == 0)
-                {
-                    tickHeight = 15;
-                    DrawTickLabel(g, i.ToString(), i, formHeight, tickHeight);
-                }
-                else if (i % 10 == 0)
-                {
-                    tickHeight = 10;
-                }
-                else
-                {
-                    tickHeight = 5;
-                }
+            var tickHeight = GetTickHeight(i);
+            DrawTick(g, i, formHeight, tickHeight);
 
-                DrawTick(g, i, formHeight, tickHeight);
+            if (i % 100 == 0)
+            {
+                DrawTickLabel(g, i.ToString(), i, formHeight, tickHeight);
             }
         }
     }
 
+    private static int GetTickHeight(int position) => position switch
+    {
+        _ when position % 100 == 0 => 15,
+        _ when position % 10 == 0 => 10,
+        _ => 5
+    };
+
     private static void DrawTick(Graphics g, int xPos, int formHeight, int tickHeight)
     {
-        // Top
         g.DrawLine(Pens.Black, xPos, 0, xPos, tickHeight);
-
-        // Bottom
         g.DrawLine(Pens.Black, xPos, formHeight, xPos, formHeight - tickHeight);
     }
 
     private void DrawTickLabel(Graphics g, string text, int xPos, int formHeight, int height)
     {
-        // Top
         g.DrawString(text, Font, Brushes.Black, xPos, height);
-
-        // Bottom
         g.DrawString(text, Font, Brushes.Black, xPos, formHeight - height - Font.Height);
+    }
+
+    #endregion
+
+    #region Event Handlers
+
+    protected override void OnResize(EventArgs e)
+    {
+        if (ShowToolTip)
+        {
+            SetToolTip();
+        }
+        base.OnResize(e);
+    }
+
+    private void SetToolTip()
+    {
+        _toolTip.SetToolTip(this, $"Width: {Width} pixels\nHeight: {Height} pixels");
     }
 
     private void OpacityMenuHandler(object sender, EventArgs e)
     {
-        ToolStripMenuItem mi = (ToolStripMenuItem)sender;
-        Opacity = double.Parse(mi.Text.Replace("%", "")) / 100;
+        if (sender is ToolStripMenuItem { Text: var text } &&
+            double.TryParse(text.Replace("%", ""), out var value))
+        {
+            Opacity = value / 100;
+        }
     }
 
-    private void MenuHandler(object sender, EventArgs e)
+    private void MenuHandler(object? sender, EventArgs e)
     {
-        ToolStripMenuItem mi = (ToolStripMenuItem)sender;
+        if (sender is not ToolStripMenuItem menuItem) return;
 
-        switch (mi.Text)
+        switch (menuItem.Text)
         {
             case "Exit":
                 Close();
                 break;
-
             case "Tool Tip":
                 ShowToolTip = !ShowToolTip;
                 break;
-
             case "Vertical":
                 ChangeOrientation();
                 break;
-
             case "Stay On Top":
-                mi.Checked = !mi.Checked;
-                TopMost = mi.Checked;
+                menuItem.Checked = !menuItem.Checked;
+                TopMost = menuItem.Checked;
                 break;
-
             case "About":
-                string message =
-                    $"Ruler v{Application.ProductVersion} by Jeff Key\nwww.sliver.com\nIcon by Kristen Magee @ www.kbecca.com";
-                MessageBox.Show(message, "About Ruler", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                break;
-
-            default:
-                // MessageBox.Show("Unknown menu item.");
+                ShowAboutDialog();
                 break;
         }
+    }
+
+    private static void ShowAboutDialog()
+    {
+        var message = $"Ruler v{Application.ProductVersion} by Jeff Key\n" +
+                     "www.sliver.com\n" +
+                     "Icon by Kristen Magee @ www.kbecca.com";
+        MessageBox.Show(message, "About Ruler", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void ChangeOrientation()
     {
         IsVertical = !IsVertical;
-        int width = Width;
-        Width = Height;
-        Height = width;
+        (Width, Height) = (Height, Width);
     }
+
+    #endregion
+
+    #region Dispose
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _toolTip?.Dispose();
+            _menu?.Dispose();
+            _rulerFont?.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+
+    #endregion
 }

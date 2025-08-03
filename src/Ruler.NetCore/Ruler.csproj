@@ -1,23 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
-    <Authors>Jeff Key, Edi Wang</Authors>
-    <Version>2.2.0</Version>
-    <Company>Ruler.NetCore</Company>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/EdiWang/Ruler</RepositoryUrl>
-    <ApplicationIcon>app.ico</ApplicationIcon>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<Authors>Jeff Key, Edi Wang</Authors>
+		<Version>2.2.0</Version>
+		<Company>Ruler.NetCore</Company>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/EdiWang/Ruler</RepositoryUrl>
+		<ApplicationIcon>app.ico</ApplicationIcon>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="app.ico" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="app.ico" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Content Include="app.ico" />
-  </ItemGroup>
+	<ItemGroup>
+		<Content Include="app.ico" />
+	</ItemGroup>
 
 </Project>
