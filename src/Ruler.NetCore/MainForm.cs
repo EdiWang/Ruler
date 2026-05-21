@@ -21,6 +21,8 @@ public sealed class MainForm : Form
     private const double DefaultOpacity = 0.65;
     private const int DefaultWidth = 512;
     private const int DefaultHeight = 128;
+    private const int MinimumWidth = 100;
+    private const int MinimumHeight = 40;
 
     #endregion
 
@@ -114,6 +116,7 @@ public sealed class MainForm : Form
         Text = "Ruler";
         BackColor = Color.White;
         ClientSize = new Size(DefaultWidth, DefaultHeight);
+        MinimumSize = new Size(MinimumWidth, MinimumHeight);
         FormBorderStyle = FormBorderStyle.None;
         Opacity = DefaultOpacity;
         ContextMenuStrip = _menu;
@@ -164,7 +167,7 @@ public sealed class MainForm : Form
         var mousePos = MousePosition;
         _offset = new Point(mousePos.X - Location.X, mousePos.Y - Location.Y);
         _mouseDownPoint = mousePos;
-        _mouseDownRect = ClientRectangle;
+        _mouseDownRect = Bounds;
 
         base.OnMouseDown(e);
     }
@@ -283,19 +286,32 @@ public sealed class MainForm : Form
             MousePosition.X - _mouseDownPoint.X,
             MousePosition.Y - _mouseDownPoint.Y);
 
-        switch (_resizeRegion)
+        var left = _mouseDownRect.Left;
+        var top = _mouseDownRect.Top;
+        var right = _mouseDownRect.Right;
+        var bottom = _mouseDownRect.Bottom;
+
+        if (_resizeRegion is ResizeRegion.W or ResizeRegion.NW or ResizeRegion.SW)
         {
-            case ResizeRegion.E:
-                Width = _mouseDownRect.Width + mouseDiff.X;
-                break;
-            case ResizeRegion.S:
-                Height = _mouseDownRect.Height + mouseDiff.Y;
-                break;
-            case ResizeRegion.SE:
-                Width = _mouseDownRect.Width + mouseDiff.X;
-                Height = _mouseDownRect.Height + mouseDiff.Y;
-                break;
+            left = Math.Min(_mouseDownRect.Left + mouseDiff.X, _mouseDownRect.Right - MinimumWidth);
         }
+
+        if (_resizeRegion is ResizeRegion.E or ResizeRegion.NE or ResizeRegion.SE)
+        {
+            right = Math.Max(_mouseDownRect.Right + mouseDiff.X, _mouseDownRect.Left + MinimumWidth);
+        }
+
+        if (_resizeRegion is ResizeRegion.N or ResizeRegion.NE or ResizeRegion.NW)
+        {
+            top = Math.Min(_mouseDownRect.Top + mouseDiff.Y, _mouseDownRect.Bottom - MinimumHeight);
+        }
+
+        if (_resizeRegion is ResizeRegion.S or ResizeRegion.SE or ResizeRegion.SW)
+        {
+            bottom = Math.Max(_mouseDownRect.Bottom + mouseDiff.Y, _mouseDownRect.Top + MinimumHeight);
+        }
+
+        SetBounds(left, top, right - left, bottom - top);
     }
 
     private void SetResizeCursor(ResizeRegion region)
