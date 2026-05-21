@@ -11,6 +11,11 @@ public sealed class MainForm : Form
         None, N, NE, E, SE, S, SW, W, NW
     }
 
+    private enum MenuCommand
+    {
+        StayOnTop, Vertical, ToolTip, Opacity, About, Exit
+    }
+
     #endregion
 
     #region Constants
@@ -18,7 +23,7 @@ public sealed class MainForm : Form
     private const int DefaultResizeBorderWidth = 5;
     private const int SmallMovement = 1;
     private const int LargeMovement = 5;
-    private const double DefaultOpacity = 0.65;
+    private const int DefaultOpacityPercent = 70;
     private const int DefaultWidth = 512;
     private const int DefaultHeight = 128;
     private const int MinimumWidth = 100;
@@ -31,6 +36,7 @@ public sealed class MainForm : Form
     private readonly ToolTip _toolTip = new();
     private readonly ContextMenuStrip _menu = new();
     private readonly Font _rulerFont = new("Segoe UI", 10);
+    private readonly List<ToolStripMenuItem> _opacityMenuItems = [];
 
     private Point _offset;
     private Rectangle _mouseDownRect;
@@ -118,21 +124,21 @@ public sealed class MainForm : Form
         ClientSize = new Size(DefaultWidth, DefaultHeight);
         MinimumSize = new Size(MinimumWidth, MinimumHeight);
         FormBorderStyle = FormBorderStyle.None;
-        Opacity = DefaultOpacity;
+        Opacity = DefaultOpacityPercent / 100d;
         ContextMenuStrip = _menu;
         Font = _rulerFont;
     }
 
     private void SetUpMenu()
     {
-        AddMenuItem("Stay On Top");
-        _verticalMenuItem = AddMenuItem("Vertical");
-        _toolTipMenuItem = AddMenuItem("Tool Tip");
-        var opacityMenuItem = AddMenuItem("Opacity");
+        AddMenuItem("Stay On Top", MenuCommand.StayOnTop);
+        _verticalMenuItem = AddMenuItem("Vertical", MenuCommand.Vertical);
+        _toolTipMenuItem = AddMenuItem("Tool Tip", MenuCommand.ToolTip);
+        var opacityMenuItem = AddMenuItem("Opacity", MenuCommand.Opacity);
         _menu.Items.Add(new ToolStripSeparator());
-        AddMenuItem("About");
+        AddMenuItem("About", MenuCommand.About);
         _menu.Items.Add(new ToolStripSeparator());
-        AddMenuItem("Exit");
+        AddMenuItem("Exit", MenuCommand.Exit);
 
         CreateOpacitySubMenu(opacityMenuItem);
     }
@@ -141,17 +147,23 @@ public sealed class MainForm : Form
     {
         for (int i = 10; i <= 100; i += 10)
         {
-            var subMenu = new ToolStripMenuItem($"{i}%");
+            var subMenu = new ToolStripMenuItem($"{i}%")
+            {
+                Checked = i == DefaultOpacityPercent,
+                Tag = i
+            };
             subMenu.Click += OpacityMenuHandler;
             opacityMenuItem.DropDownItems.Add(subMenu);
+            _opacityMenuItems.Add(subMenu);
         }
     }
 
-    private ToolStripMenuItem AddMenuItem(string text, Keys shortcut = Keys.None)
+    private ToolStripMenuItem AddMenuItem(string text, MenuCommand command, Keys shortcut = Keys.None)
     {
         var menuItem = new ToolStripMenuItem(text)
         {
-            ShortcutKeys = shortcut
+            ShortcutKeys = shortcut,
+            Tag = command
         };
         menuItem.Click += MenuHandler;
         _menu.Items.Add(menuItem);
@@ -440,10 +452,14 @@ public sealed class MainForm : Form
 
     private void OpacityMenuHandler(object sender, EventArgs e)
     {
-        if (sender is ToolStripMenuItem { Text: var text } &&
-            double.TryParse(text.Replace("%", ""), out var value))
+        if (sender is ToolStripMenuItem { Tag: int value } selectedMenuItem)
         {
-            Opacity = value / 100;
+            Opacity = value / 100d;
+
+            foreach (var menuItem in _opacityMenuItems)
+            {
+                menuItem.Checked = menuItem == selectedMenuItem;
+            }
         }
     }
 
@@ -451,22 +467,22 @@ public sealed class MainForm : Form
     {
         if (sender is not ToolStripMenuItem menuItem) return;
 
-        switch (menuItem.Text)
+        switch (menuItem.Tag)
         {
-            case "Exit":
+            case MenuCommand.Exit:
                 Close();
                 break;
-            case "Tool Tip":
+            case MenuCommand.ToolTip:
                 ShowToolTip = !ShowToolTip;
                 break;
-            case "Vertical":
+            case MenuCommand.Vertical:
                 ChangeOrientation();
                 break;
-            case "Stay On Top":
+            case MenuCommand.StayOnTop:
                 menuItem.Checked = !menuItem.Checked;
                 TopMost = menuItem.Checked;
                 break;
-            case "About":
+            case MenuCommand.About:
                 ShowAboutDialog();
                 break;
         }
